@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>GreenTrack</title>
+<style>
+:root{
+  --green:#1c7c54;
+  --light:#eaf6ee;
+  --muted:#6b7280;
+  --card:#ffffff;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:Inter, "Noto Sans KR", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial;
+  background: #f4fbf7; color:#111;
+}
+header{background:var(--green); color:#fff; padding:18px 16px; display:flex; align-items:center; justify-content:space-between;}
+.brand{font-weight:700;font-size:20px}
+.header-right{display:flex;gap:8px;align-items:center}
+.btn{background:var(--green);color:#fff;border:none;padding:10px 12px;border-radius:8px;cursor:pointer}
+.small-btn{background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.2);padding:7px 10px;border-radius:8px}
+.container{max-width:1050px;margin:18px auto;padding:0 16px}
+.nav{display:flex;gap:8px;margin:12px 0}
+.tab{background:var(--card);padding:10px 14px;border-radius:10px;cursor:pointer;border:1px solid transparent}
+.tab.active{border-color:var(--green);box-shadow:0 6px 18px rgba(28,124,84,0.08)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.card{background:var(--card);padding:16px;border-radius:12px;border:1px solid #e6f2ea}
+.h1{font-size:20px;margin:0 0 8px}
+.points{font-size:22px;font-weight:700;color:var(--green)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn-action{background:#2e9e67;color:#fff;border:none;padding:10px;border-radius:8px;cursor:pointer}
+.section{margin:16px 0}
+.form-row{display:flex;gap:8px;align-items:center}
+.input{padding:8px;border-radius:8px;border:1px solid #ddd;width:100%}
+.postImg{max-width:200px;border-radius:8px;margin-top:8px}
+.small{font-size:13px;color:var(--muted)}
+.list{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:8px;align-items:center}
+.reward-item{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:8px;border:1px dashed #e0ece2;background:#fbfff9}
+.footer{padding:18px;text-align:center;color:var(--muted);font-size:13px;margin-top:26px;border-top:1px solid #e9f3ee}
+@media(max-width:880px){
+  .grid{grid-template-columns:1fr}
+  header{flex-direction:column;gap:8px;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">GreenTrack</div>
+  <div class="header-right">
+    <div id="userBadge" class="small">비회원</div>
+    <button id="loginBtn" class="small-btn">닉네임 설정</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- nav -->
+  <div class="nav" id="navTabs">
+    <div class="tab active" data-tab="dashboard">대시보드</div>
+    <div class="tab" data-tab="record">기록하기</div>
+    <div class="tab" data-tab="shop">리워드 샵</div>
+    <div class="tab" data-tab="challenge">챌린지</div>
+    <div class="tab" data-tab="community">커뮤니티</div>
+    <div class="tab" data-tab="mypage">마이페이지</div>
+  </div>
+
+  <!-- pages -->
+  <div id="pages">
+
+    <!-- Dashboard -->
+    <section id="dashboard" class="page card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <h2 class="h1">오늘의 퀵 요약</h2>
+          <div>누적 포인트: <span id="pointDisplay" class="points">0</span></div>
+          <div class="small">총 절감 추정 CO₂: <span id="co2Display">0</span> g</div>
+        </div>
+        <div style="text-align:right">
+          <div class="small">활성 사용자 예시</div>
+          <div id="activeUsers" class="small">-</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3 class="small">일일 행동 버튼</h3>
+        <div class="actions">
+          <button class="btn-action" onclick="recordAction('bus')">대중교통 이용 (+10p)</button>
+          <button class="btn-action" onclick="recordAction('bottle')">텀블러 사용 (+5p)</button>
+          <button class="btn-action" onclick="recordAction('recycle')">재활용 실천 (+8p)</button>
+          <button class="btn-action" onclick="recordAction('shopRefill')">리필 스테이션 방문 (+12p)</button>
+        </div>
+        <div class="small" style="margin-top:8px">※ 행동 당 포인트/CO₂ 환산은 예시값이며 관리자 설정으로 조정 가능</div>
+      </div>
+
+      <div class="section">
+        <h3 class="h1">최근 활동</h3>
+        <div id="recentList" class="list small"></div>
+      </div>
+    </section>
+
+    <!-- Record -->
+    <section id="record" class="page card" style="display:none">
+      <h2 class="h1">기록 상세</h2>
+      <div class="section">
+        <div class="form-row">
+          <select id="actionSelect" class="input" style="width:40%">
+            <option value="bus">대중교통 이용</option>
+            <option value="bottle">텀블러 사용</option>
+            <option value="recycle">재활용</option>
+            <option value="shopRefill">리필 스테이션 방문</option>
+            <option value="walk">도보/자전거 이동</option>
+          </select>
+          <input id="actionNote" class="input" placeholder="간단한 메모(선택)">
+          <button class="btn" onclick="manualRecord()">기록하기</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3 class="h1">누적 통계</h3>
+        <div id="stats" class="small">데이터 없음</div>
+      </div>
+    </section>
+
+    <!-- Shop -->
+    <section id="shop" class="page card" style="display:none">
+      <h2 class="h1">리워드 샵</h2>
+      <div class="section">
+        <div id="rewardsList" class="list"></div>
+      </div>
+
+      <div class="section">
+        <h3 class="h1 small">내 교환 내역</h3>
+        <div id="redeemList" class="small"></div>
+      </div>
+    </section>
+
+    <!-- Challenge -->
+    <section id="challenge" class="page card" style="display:none">
+      <h2 class="h1">챌린지</h2>
+      <div class="section">
+        <div class="form-row">
+          <input id="challengeName" class="input" placeholder="챌린지 이름(예: '텀블러 30일')">
+          <input id="challengeTarget" class="input" placeholder="목표 포인트(예: 300)">
+          <button class="btn" onclick="createChallenge()">챌린지 생성</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3 class="h1 small">진행 중인 챌린지</h3>
+        <div id="challengeList" class="small"></div>
+      </div>
+    </section>
+
+    <!-- Community -->
+    <section id="community" class="page card" style="display:none">
+      <h2 class="h1">커뮤니티</h2>
+
+      <div class="section">
+        <textarea id="postText" class="input" placeholder="인증 글이나 팁을 공유하세요 (최대 500자)" rows="4"></textarea>
+        <div class="form-row" style="margin-top:8px">
+          <input id="postImage" type="file" accept="image/*">
+          <button class="btn" onclick="createPost()">게시</button>
+        </div>
+        <div class="small">※ 사진은 브라우저에서 base64로 저장되며, 많은 이미지는 저장 용량을 차지하니 주의</div>
+      </div>
+
+      <div class="section">
+        <h3 class="h1 small">최근 게시물</h3>
+        <div id="postList" class="list"></div>
+      </div>
+    </section>
+
+    <!-- MyPage -->
+    <section id="mypage" class="page card" style="display:none">
+      <h2 class="h1">마이페이지</h2>
+      <div class="section">
+        <label>닉네임</label>
+        <div class="form-row">
+          <input id="nickInput" class="input" placeholder="닉네임 입력">
+          <button class="btn" onclick="saveNick()">저장</button>
+        </div>
+        <div class="small" style="margin-top:8px">내 포인트·활동·교환 기록이 저장됩니다(로컬 저장).</div>
+      </div>
+
+      <div class="section">
+        <h3 class="h1 small">내 기록</h3>
+        <div id="myActivities" class="small"></div>
+      </div>
+
+      <div class="section">
+        <h3 class="h1 small">내 교환 기록</h3>
+        <div id="myRedeems" class="small"></div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="footer small">
+    GreenTrack 데모 — 교육/제안용. 실제 서비스는 DB/서버 인증과 제휴 API 연동 필요.
+  </div>
+</div>
+
+<script>
+// ------------------------ 데이터 키 ------------------------
+const LS_KEYS = {
+  user: 'gt_user_v1',
+  points: 'gt_points_v1',
+  activities: 'gt_act_v1',
+  posts: 'gt_posts_v1',
+  rewards: 'gt_rewards_v1',
+  redeems: 'gt_redeems_v1',
+  challenges: 'gt_challenges_v1'
+};
+
+// ------------------------ 초기 데이터 ------------------------
+let user = JSON.parse(localStorage.getItem(LS_KEYS.user) || 'null');
+let points = Number(localStorage.getItem(LS_KEYS.points) || 0);
+let activities = JSON.parse(localStorage.getItem(LS_KEYS.activities) || '[]');
+let posts = JSON.parse(localStorage.getItem(LS_KEYS.posts) || '[]');
+let rewards = JSON.parse(localStorage.getItem(LS_KEYS.rewards) || '[]');
+let redeems = JSON.parse(localStorage.getItem(LS_KEYS.redeems) || '[]');
+let challenges = JSON.parse(localStorage.getItem(LS_KEYS.challenges) || '[]');
+
+// 기본 리워드 (관리자 UI 없이 코드 초기값으로 세팅)
+if(rewards.length === 0){
+  rewards = [
+    { id:1, title:'지역 카페 10% 할인 쿠폰', cost:100 },
+    { id:2, title:'친환경 굿즈(에코백)', cost:300 },
+    { id:3, title:'로컬 로스터리 아메리카노 1잔', cost:150 }
+  ];
+  localStorage.setItem(LS_KEYS.rewards, JSON.stringify(rewards));
+}
+
+// ------------------------ 유틸 ------------------------
+function saveAll(){
+  localStorage.setItem(LS_KEYS.user, JSON.stringify(user));
+  localStorage.setItem(LS_KEYS.points, String(points));
+  localStorage.setItem(LS_KEYS.activities, JSON.stringify(activities));
+  localStorage.setItem(LS_KEYS.posts, JSON.stringify(posts));
+  localStorage.setItem(LS_KEYS.rewards, JSON.stringify(rewards));
+  localStorage.setItem(LS_KEYS.redeems, JSON.stringify(redeems));
+  localStorage.setItem(LS_KEYS.challenges, JSON.stringify(challenges));
+}
+
+// 안전한 텍스트 처리
+function esc(s){ return String(s||'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+// ------------------------ UI 기본 렌더 ------------------------
+const tabs = document.querySelectorAll('.tab');
+tabs.forEach(t=>t.addEventListener('click', ()=> {
+  tabs.forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  showPage(t.dataset.tab);
+}));
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.style.display='none');
+  document.getElementById(id).style.display='block';
+  // 특정 페이지에 들어갈 때 동작
+  if(id === 'dashboard') renderRecent();
+  if(id === 'shop') renderRewards();
+  if(id === 'community') renderPosts();
+  if(id === 'challenge') renderChallenges();
+  if(id === 'mypage') renderMy();
+}
+showPage('dashboard');
+
+function updateHeader(){
+  document.getElementById('pointDisplay').innerText = points;
+  document.getElementById('co2Display').innerText = estimateCO2();
+  document.getElementById('userBadge').innerText = user && user.name ? user.name : '비회원';
+}
+updateHeader();
+
+// ------------------------ 행동 기록 로직 ------------------------
+const ACTION_CONFIG = {
+  bus: { points:10, co2:150 },       // 예시: 버스 이용 150g 절감(가정)
+  bottle: { points:5, co2:20 },
+  recycle: { points:8, co2:50 },
+  shopRefill: { points:12, co2:100 },
+  walk: { points:6, co2:120 }
+};
+
+function recordAction(type, note){
+  const cfg = ACTION_CONFIG[type];
+  if(!cfg) return alert('알 수 없는 행동');
+  const item = {
+    id: Date.now(),
+    type, note:note||'', points: cfg.points, co2: cfg.co2,
+    time: new Date().toLocaleString(),
+    user: user && user.name ? user.name : '익명'
+  };
+  activities.unshift(item);
+  points += cfg.points;
+  saveAll();
+  updateHeader();
+  renderRecent();
+  showToast(`기록 완료: +${cfg.points}p`);
+  // 챌린지 자동 반영: 참여한 챌린지 포인트 누적
+  challenges.forEach(ch => {
+    if(!ch.entries) ch.entries = {};
+    const uid = user && user.name ? user.name : '익명';
+    ch.entries[uid] = (ch.entries[uid] || 0) + cfg.points;
+  });
+  saveAll();
+}
+
+function manualRecord(){
+  const type = document.getElementById('actionSelect').value;
+  const note = document.getElementById('actionNote').value.trim();
+  recordAction(type, note);
+  document.getElementById('actionNote').value = '';
+}
+
+function renderRecent(){
+  const el = document.getElementById('recentList');
+  if(activities.length === 0) { el.innerHTML = '<div class="small">기록이 없습니다.</div>'; return; }
+  el.innerHTML = activities.slice(0,6).map(a=>`<div>${esc(a.time)} · ${esc(displayAction(a.type))} · +${a.points}p <div class="small">${esc(a.note)}</div></div>`).join('');
+}
+
+function displayAction(code){
+  return ({
+    bus:'대중교통 이용',
+    bottle:'텀블러 사용',
+    recycle:'재활용',
+    shopRefill:'리필 스테이션 방문',
+    walk:'도보/자전거 이동'
+  })[code]||code;
+}
+
+function estimateCO2(){
+  // 총 절감량(예시): activities 합계
+  return activities.reduce((s,a)=>s+(a.co2||0),0);
+}
+
+// ------------------------ 커뮤니티 ------------------------
+async function createPost(){
+  const text = document.getElementById('postText').value.trim();
+  if(!text) return alert('내용을 입력하세요');
+  const file = document.getElementById('postImage').files[0];
+  let imgData = null;
+  if(file){
+    imgData = await fileToBase64(file);
+  }
+  const post = { id:Date.now(), author: user && user.name ? user.name : '익명', text, img: imgData, time: new Date().toLocaleString(), likes:0 };
+  posts.unshift(post);
+  saveAll();
+  document.getElementById('postText').value = '';
+  document.getElementById('postImage').value = '';
+  renderPosts();
+  showToast('게시 완료');
+}
+
+function renderPosts(){
+  const box = document.getElementById('postList');
+  if(posts.length === 0){ box.innerHTML = '<div class="small">게시물이 없습니다.</div>'; return; }
+  box.innerHTML = posts.map(p=>{
+    return `<div class="card">
+      <div><strong>${esc(p.author)}</strong> · <span class="small">${esc(p.time)}</span></div>
+      <div style="margin-top:8px">${esc(p.text)}</div>
+      ${p.img?`<img src="${p.img}" class="postImg">`:''}
+      <div style="margin-top:8px" class="row">
+        <button class="btn-action" onclick="likePost(${p.id})">❤ ${p.likes}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function likePost(id){
+  const idx = posts.findIndex(p=>p.id===id);
+  if(idx<0) return;
+  posts[idx].likes++;
+  saveAll();
+  renderPosts();
+}
+
+// ------------------------ 파일 -> base64 ------------------------
+function fileToBase64(file){
+  return new Promise((res, rej)=>{
+    const fr = new FileReader();
+    fr.onload = ()=>res(fr.result);
+    fr.onerror = rej;
+    fr.readAsDataURL(file);
+  });
+}
+
+// ------------------------ 리워드 샵 ------------------------
+function renderRewards(){
+  const box = document.getElementById('rewardsList');
+  box.innerHTML = rewards.map(r=>{
+    return `<div class="reward-item">
+      <div>
+        <div><strong>${esc(r.title)}</strong></div>
+        <div class="small">필요 포인트: ${r.cost}p</div>
+      </div>
+      <div>
+        <button class="btn-action" onclick="redeem(${r.id})">교환</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function redeem(id){
+  const r = rewards.find(x=>x.id===id);
+  if(!r) return;
+  if(points < r.cost) return alert('포인트가 부족합니다.');
+  if(!confirm(`${r.title}을(를) ${r.cost}p로 교환하시겠습니까?`)) return;
+  points -= r.cost;
+  const rec = { id:Date.now(), title:r.title, cost:r.cost, time:new Date().toLocaleString() };
+  redeems.unshift(rec);
+  saveAll();
+  updateHeader();
+  renderRewards();
+  renderRedeems();
+  showToast('교환 완료');
+}
+
+// 교환 내역
+function renderRedeems(){
+  const box = document.getElementById('redeemList');
+  if(redeems.length === 0) { box.innerHTML = '<div class="small">교환 내역이 없습니다.</div>'; return; }
+  box.innerHTML = redeems.map(r=>`<div>${esc(r.time)} · ${esc(r.title)} · -${r.cost}p</div>`).join('');
+}
+
+// ------------------------ 챌린지 ------------------------
+function createChallenge(){
+  const name = document.getElementById('challengeName').value.trim();
+  const target = Number(document.getElementById('challengeTarget').value || 0);
+  if(!name || target <= 0) return alert('이름과 목표 포인트를 입력하세요');
+  const ch = { id:Date.now(), name, target, creator: user && user.name ? user.name : '익명', entries: {} };
+  challenges.unshift(ch);
+  saveAll();
+  document.getElementById('challengeName').value=''; document.getElementById('challengeTarget').value='';
+  renderChallenges();
+  showToast('챌린지 생성');
+}
+
+function renderChallenges(){
+  const box = document.getElementById('challengeList');
+  if(challenges.length === 0) { box.innerHTML = '<div class="small">진행 중인 챌린지가 없습니다.</div>'; return; }
+  box.innerHTML = challenges.map(ch=>{
+    // top3
+    const ranks = Object.entries(ch.entries || {}).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([name,score])=>`${esc(name)}:${score}p`).join(', ');
+    return `<div class="card">
+      <div><strong>${esc(ch.name)}</strong> · 목표 ${ch.target}p</div>
+      <div class="small">생성: ${esc(ch.creator)}</div>
+      <div style="margin-top:8px">${ranks?ranks:'참여자 없음'}</div>
+      <div style="margin-top:8px">
+        <button class="btn" onclick="joinChallenge(${ch.id})">참여</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function joinChallenge(id){
+  const ch = challenges.find(c=>c.id===id);
+  if(!ch) return;
+  const uid = user && user.name ? user.name : '익명';
+  if(!ch.entries) ch.entries = {};
+  if(ch.entries[uid]) return alert('이미 참여 중입니다.');
+  ch.entries[uid] = 0;
+  saveAll();
+  renderChallenges();
+  showToast('챌린지 참여 완료');
+}
+
+// ------------------------ 마이페이지 ------------------------
+function saveNick(){
+  const n = document.getElementById('nickInput').value.trim();
+  if(!n) return alert('닉네임을 입력하세요');
+  user = { name: n, created: Date.now() };
+  localStorage.setItem(LS_KEYS.user, JSON.stringify(user));
+  updateHeader();
+  showToast('닉네임 저장');
+}
+
+function renderMy(){
+  const actBox = document.getElementById('myActivities');
+  actBox.innerHTML = activities.length ? activities.map(a=>`<div>${esc(a.time)} · ${esc(displayAction(a.type))} · +${a.points}p</div>`).join('') : '<div class="small">활동이 없습니다.</div>';
+  document.getElementById('myRedeems').innerHTML = redeems.length ? redeems.map(r=>`<div>${esc(r.time)} · ${esc(r.title)} · -${r.cost}p</div>`).join('') : '<div class="small">교환 내역이 없습니다.</div>';
+}
+
+// ------------------------ 로그인 닉네임 초기 처리 ------------------------
+document.getElementById('loginBtn').addEventListener('click', ()=>{
+  const name = prompt('닉네임을 입력하세요 (익명 허용):', user && user.name ? user.name : '');
+  if(name === null) return;
+  user = { name: name || '익명', created: Date.now() };
+  localStorage.setItem(LS_KEYS.user, JSON.stringify(user));
+  updateHeader();
+  showToast('닉네임 설정됨');
+});
+
+// ------------------------ 알림(간단 토스트) ------------------------
+function showToast(msg){
+  const d = document.createElement('div');
+  d.style.position = 'fixed';
+  d.style.right = '16px';
+  d.style.bottom = '20px';
+  d.style.background = 'rgba(0,0,0,0.75)';
+  d.style.color = '#fff';
+  d.style.padding = '10px 14px';
+  d.style.borderRadius = '8px';
+  d.style.zIndex = 9999;
+  d.innerText = msg;
+  document.body.appendChild(d);
+  setTimeout(()=>d.remove(),1800);
+}
+
+// ------------------------ 초기 렌더 호출 ------------------------
+renderRewards();
+renderRedeems();
+renderRecent();
+renderPosts();
+renderChallenges();
+renderMy();
+updateHeader();
+
+// ------------------------ 보조: 페이지간 shortcut (탭 클릭 없이 스크립트로) ------------------------
+function goTo(tabId){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+  showPage(tabId);
+}
+</script>
+</body>
+</html>
